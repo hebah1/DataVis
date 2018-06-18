@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+  <script src="http://d3js.org/d3.v2.min.js?2.9.3"></script>
+  <style>
+  .link {
+    fill: none;
+    stroke: #666;
+    stroke-width: 1.5px;
+  }
+
+  div.tooltip {
+  position: absolute;
+  text-align: center;
+  width: 60px;
+  height: 28px;
+  padding: 2px;
+  font: 22px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+  .node circle {
+    fill: #FFFFFF;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+  }
+  text {
+    font: 10px sans-serif;
+    pointer-events: none;
+  }
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+
+    /* Position the tooltip */
+    position: absolute;
+    z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+  </style>
+  <body>
+    <p>File name: <input type="text" id="inputFile" value="miserables.json">
+    <button type="button" onclick="network()" >select</button>
+    <label for="points">Link Distance:</label>
+      <input type="range" name="distance" id="distinput" value="50" min="25" max="150">
+    </p>
+    <script>
+    function network(){
+      d3.select("svg").remove();
+
+      var file = document.getElementById("inputFile").value;
+      var dist = document.getElementById("distinput").value;
+      var width = 960,
+          height = 650
+
+     var div = d3.select("body").append("div")
+         .attr("class", "tooltip")
+         .style("opacity", 0);
+
+      var svg = d3.select("body").append("svg")
+          .attr("width", width)
+          .attr("height", height);
+
+      var force = d3.layout.force()
+          .gravity(.6)
+          .distance(50)
+          .charge(-500)
+          .linkDistance(dist)
+          .size([width, height]);
+
+      d3.json(file, function(json) {
+        force
+            .nodes(json.nodes)
+            .links(json.links)
+            .start();
+
+        var div = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        var link = svg.selectAll(".link")
+            .data(json.links)
+          .enter().append("line")
+            .attr("class", "link")
+          .style("stroke-width", function(d) { return Math.sqrt(d.weight); });
+
+          var tooltip = d3.select("body")
+          	.append("div")
+          	.style("position", "absolute")
+          	.style("z-index", "10")
+          	.style("visibility", "hidden")
+          	.text("a simple tooltip");
+
+        var node = svg.selectAll(".node")
+            .data(json.nodes)
+          .enter().append("g")
+            .attr("class", "node")
+            .on("mouseover", function(d) {
+              d3.select(this).select("circle").transition()
+              .duration(750)
+              .style("opacity", .9)
+              .attr("r", 16)
+              d3.select(this).append("text")
+              .style("visibility", "visible")
+             .text(function(d) { return d.name });
+
+           })
+       .on("mouseout", function(d) {
+         d3.select(this).select("circle").transition()
+             .duration(750)
+             .attr("r", 8)
+             d3.select(this).append("text")
+             .style("visibility", "hidden")
+             .style("opacity", 0)
+             .text(function(d) { return d.name });
+             })
+            .call(force.drag);
+
+
+        node.append("circle")
+            .attr("r",8);
+
+        node.append("text")
+            .attr("dx", 12)
+            .attr("dy", ".35em")
+            .text(function(d) { return d.name });
+        force.on("tick", function() {
+          link.attr("x1", function(d) { return d.source.x; })
+              .attr("y1", function(d) { return d.source.y; })
+              .attr("x2", function(d) { return d.target.x; })
+              .attr("y2", function(d) { return d.target.y; });
+          node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+        });
+      });
+    }
+    </script>
+  </body>
+</html>
